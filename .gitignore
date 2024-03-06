@@ -1,0 +1,18 @@
+#files to not backup
+*.lst
+*.o
+*.elf
+*.map
+*.bin
+*.out
+*.pdf
+.tags
+GPATH
+GRTAGS
+GTAGS
+*.zip
+tests_gtk
+*.txt
+*.gcov
+*.gcda
+*.gcno
