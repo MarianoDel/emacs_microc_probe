@@ -14,7 +14,7 @@
 #include "usart.h"
 #include "tim.h"
 #include "comms.h"
-#include "temp_sensor.h"
+// #include "temp_sensor.h"
 
 
 #include <stdio.h>
@@ -117,6 +117,7 @@ void Manager (char * ant_name, char * ant_params)
             Led_Off();
 
             short temp = Temp_Sensor_GetTemp (Temp_Channel);
+            // short temp = 0         
 
             //reviso errores de conversion
             if ((temp >= 0) && (temp <= 85))

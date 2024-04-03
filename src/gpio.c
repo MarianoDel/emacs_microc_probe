@@ -14,7 +14,7 @@
 #include "hard.h"
 
 // Ports Configs ---------------------------------------------------------------
-// #define GPIOA_ENABLE
+#define GPIOA_ENABLE
 #define GPIOB_ENABLE
 //#define GPIOF_ENABLE
 
@@ -81,19 +81,21 @@ void GPIO_Config (void)
     if (!GPIOA_CLK)
         GPIOA_CLK_ON;
     
-    temp = GPIOA->MODER;    //2 bits por pin
-    temp &= 0xFCCC0000;    //PA0 analog; PA1 output; PA2 - PA3 alternative; PA4 - PA7 output
-    temp |= 0x012055A7;    //PA8 input exti; PA10 alternative; PA12 output
+    temp = GPIOA->MODER;    // 2 bits por pin
+    // temp &= 0x33FFFFFF;    // PA0 output; PA8 output; PA13 input
+    // temp |= 0x40000000;    //    
+    temp &= 0x33FFFFFF;    // PA0 output; PA8 output; PA13 output    
+    temp |= 0x44000000;    //
     GPIOA->MODER = temp;
 
     temp = GPIOA->OTYPER;    //1 bit por pin
-    temp &= 0xFFFFFFFF;    //
-    temp |= 0x00000000;
+    temp &= 0xFFFFDFFF;    //PA13 open drain
+    temp |= 0x00002000;
     GPIOA->OTYPER = temp;
     
-    temp = GPIOA->OSPEEDR;	//2 bits por pin
-    temp &= 0xFCFF00C3;    //PA1 - PA2, PA4 - PA7 low speed
-    temp |= 0x00000000;    //PA12 low speed
+    temp = GPIOA->OSPEEDR;    // 2 bits por pin
+    temp &= 0xFFFFFFFF;    // PA0 speed
+    temp |= 0x00000000;
     GPIOA->OSPEEDR = temp;
 
     temp = GPIOA->PUPDR;	//2 bits por pin
@@ -120,7 +122,7 @@ void GPIO_Config (void)
     GPIOB->OTYPER = temp;
 
     temp = GPIOB->OSPEEDR;	//2 bits por pin
-    temp &= 0xFFFFF3FC;        //PB0 & PB6 low speed
+    temp &= 0xFFFFFFFC;        //PB0 & PB6 low speed
     temp |= 0x00000000;
     GPIOB->OSPEEDR = temp;
 
