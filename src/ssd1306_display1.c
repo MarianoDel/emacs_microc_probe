@@ -10,8 +10,10 @@
 //-------------------------------------------------------
 
 // Includes --------------------------------------------------------------------
-#include "ssd1306_display.h"
+#include "ssd1306_display1.h"
+#include "ssd1306_params1.h"
 #include "i2c.h"
+#include "hard.h"
 
 
 #include <stdlib.h>
@@ -74,7 +76,9 @@
 
 // Globals ---------------------------------------------------------------------
 static uint8_t _i2caddr;
+#ifdef I2C_WITH_INTS
 static unsigned char cmdbuf[129] = { 0 };
+#endif
 
 
 // Module Private Functions ----------------------------------------------------
@@ -92,7 +96,8 @@ void display_init( uint8_t i2caddr )
 
     //TODO: quitar esto de aca por favor!!!!
     // gfx_init( DISPLAYWIDTH, DISPLAYHEIGHT );
-    
+
+#ifdef OLED_128_64
 #ifdef I2C_WITH_INTS    
     cmdbuf[0] = 0x00;
     cmdbuf[1] = SSD1306_DISPLAYOFF;
@@ -158,7 +163,75 @@ void display_init( uint8_t i2caddr )
     
     display_write_buf( cmd, sizeof(cmd) ); 
 #endif
-  
+#endif
+
+#ifdef OLED_128_32
+#ifdef I2C_WITH_INTS    
+    cmdbuf[0] = 0x00;
+    cmdbuf[1] = SSD1306_DISPLAYOFF;
+    cmdbuf[2] = SSD1306_SETDISPLAYCLOCKDIV;
+    cmdbuf[3] = 0x80;
+    cmdbuf[4] = SSD1306_SETMULTIPLEX;
+    cmdbuf[5] = 0x1f;
+    cmdbuf[6] = SSD1306_SETDISPLAYOFFSET;
+    cmdbuf[7] = 0x00;
+    cmdbuf[8] = SSD1306_SETSTARTLINE | 0x0;
+    cmdbuf[9] = SSD1306_CHARGEPUMP;
+    cmdbuf[10] = 0x14;
+    cmdbuf[11] = SSD1306_MEMORYMODE;
+    cmdbuf[12] = 0x02;    //cmbio a page de 0x00 a 0x0
+    cmdbuf[13] = SSD1306_SEGREMAP | 0x1;
+    // cmdbuf[13] = SSD1306_SEGREMAP | 0x0       
+    cmdbuf[14] = SSD1306_COMSCANDEC;
+    cmdbuf[15] = SSD1306_SETCOMPINS;
+    cmdbuf[16] = 0x02;
+    cmdbuf[17] = SSD1306_SETCONTRAST;
+    cmdbuf[18] = 0xcf;
+    cmdbuf[19] = SSD1306_SETPRECHARGE;
+    cmdbuf[20] = 0xf1;
+    cmdbuf[21] = SSD1306_SETVCOMDETECT;
+    cmdbuf[22] = 0x40;
+    cmdbuf[23] = SSD1306_DISPLAYALLON_RESUME;
+    cmdbuf[24] = SSD1306_NORMALDISPLAY;
+    cmdbuf[25] = SSD1306_DISPLAYON;
+    
+    display_write_buf_int(cmdbuf, 26);
+    display_wait_end();
+#else
+    
+    uint8_t cmd[] = {
+        0x00,
+        SSD1306_DISPLAYOFF,
+        SSD1306_SETDISPLAYCLOCKDIV,
+        0x80,
+        SSD1306_SETMULTIPLEX,
+        0x1f,
+        SSD1306_SETDISPLAYOFFSET,
+        0x00,
+        SSD1306_SETSTARTLINE | 0x0,
+        SSD1306_CHARGEPUMP,
+        0x14,
+        SSD1306_MEMORYMODE,
+        0x02,    //cmbio a page de 0x00 a 0x02
+        SSD1306_SEGREMAP | 0x1,
+        // SSD1306_SEGREMAP | 0x0,        
+        SSD1306_COMSCANDEC,
+        SSD1306_SETCOMPINS,
+        0x02,
+        SSD1306_SETCONTRAST,
+        0xcf,
+        SSD1306_SETPRECHARGE,
+        0xf1,
+        SSD1306_SETVCOMDETECT,
+        0x40,
+        SSD1306_DISPLAYALLON_RESUME,
+        SSD1306_NORMALDISPLAY,
+        SSD1306_DISPLAYON,
+    };
+    
+    display_write_buf( cmd, sizeof(cmd) ); 
+#endif
+#endif    
 }
 
 
@@ -310,6 +383,15 @@ void display_update_int_state_machine (void)
     case DISPLAY_UPDATE_INIT:
         d_update_page = 0;
         d_update_st++;
+#ifdef USE_CTRL_FAN_FOR_DISPLAY_SM_UPDATE_ON_INIT
+        if (CTRL_FAN)
+            CTRL_FAN_OFF;
+        else
+            CTRL_FAN_ON;
+#endif
+#ifdef USE_CTRL_FAN_FOR_DISPLAY_SM_UPDATE_ON_START_END
+        CTRL_FAN_ON;
+#endif
         break;
 
     case DISPLAY_UPDATE_SET_PAGE_CMD_0:
@@ -387,6 +469,9 @@ void display_update_int_state_machine (void)
 
     case DISPLAY_UPDATE_ENDED:
     default:
+#ifdef USE_CTRL_FAN_FOR_DISPLAY_SM_UPDATE_ON_START_END
+        CTRL_FAN_OFF;
+#endif
         break;
     }
 #endif
@@ -402,8 +487,11 @@ unsigned char display_is_free (void)
     
 }
 
+
+extern void Wait_ms (unsigned short wait);
 void display_update (void)
 {
+#ifdef OLED_128_64
 #ifdef I2C_WITH_INTS
 
     //check if can send it, else ask for postupdate
@@ -440,7 +528,51 @@ void display_update (void)
         memcpy(datab + 1, SSD1306_buffer + 1 + page * 128, 128);
         display_write_buf( datab, sizeof(datab) ); 
     }
-#endif    
+#endif
+#endif
+
+#ifdef OLED_128_32
+#ifdef I2C_WITH_INTS
+
+    //check if can send it, else ask for postupdate
+    if (d_update_st == DISPLAY_UPDATE_ENDED)
+        d_update_st = DISPLAY_UPDATE_INIT;
+    else
+    {
+        if (d_update_post_update < 2)
+            d_update_post_update++;
+    }
+    
+#else
+    uint8_t cmd[2] = { 0 };
+    uint8_t datab[129];
+
+    // en page mode escribo a las 8 paginas
+    for (unsigned char page = 0; page < 4; page++)
+    {
+        //seteo el 0 de cada pagina
+        cmd[0] = 0x00;
+        cmd[1] = 0x02;    //page addr 0
+        display_write_buf( cmd, sizeof(cmd) );
+        Wait_ms(1);
+        
+        cmd[0] = 0x00;
+        cmd[1] = 0x10;    //page addr 0
+        display_write_buf( cmd, sizeof(cmd) ); 
+        Wait_ms(1);
+        
+        //seteo la pagina
+        cmd[1] = 0xB0 | page;
+        display_write_buf( cmd, sizeof(cmd) ); 
+        Wait_ms(1);
+        
+        datab[0] = 0x40;
+        memcpy(datab + 1, SSD1306_buffer + 1 + page * 128, 128);
+        display_write_buf( datab, sizeof(datab) );
+        Wait_ms(1);        
+    }
+#endif
+#endif
 }
 
 

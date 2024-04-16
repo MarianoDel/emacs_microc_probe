@@ -20,6 +20,9 @@
 #include "test_functions.h"
 #include "manager.h"
 
+#include "i2c.h"
+#include "screen1.h"
+
 #include <string.h>
 #include <stdio.h>
 
@@ -33,7 +36,7 @@ volatile unsigned short timer_standby = 0;
 
 // Globals ---------------------------------------------------------------------
 // Config Probes Names and Features
-const char s_probe [] = { "probe0,Std,No link\r\n" };
+const char s_probe [] = { "Probe1" };
 
 // const char s_probe [] = { "probe1,Std Double,Link\r\n" };
 
@@ -67,19 +70,42 @@ int main(void)
 #endif
     
     //--- Test Hardware Functions ---
-    TF_Hardware_Tests ();    
+    // TF_Hardware_Tests ();    
     //--- End of Test Hardware Functions ---    
     
-    // Delay for pins alternative and start the usart1
-    Wait_ms(1000);
+    // Delay for pins alternative
+    for (int i = 0; i < 3; i++)
+    {
+        LED_ON;
+        Wait_ms(300);
+        LED_OFF;
+        Wait_ms(300);
+    }
+
+    // Start the usart1
     Usart1Config();
 
+    // Start i2c and oled screen
+    I2C2_Init();
+
+    //primer pantalla
+    LED_ON;
+    SCREEN_Init();
+    LED_OFF;
+    
+    SCREEN_Clear ();        
+    SCREEN_Text2_Line1 ("Infinity  ");    
+    SCREEN_Text2_Line2 ("  Clinics ");
+    Wait_ms(1000);
 
     //--- Main loop ---//
     while(1)
     {
+        // SCREEN_Text2_BlankLine1();
+        // SCREEN_Text2_Line1 ("Probe1 ch1");
+        
         // Production Program
-        // Manager ((char *) s_probe);
+        Manager ((char *) s_probe);
     }
 
     return 0;

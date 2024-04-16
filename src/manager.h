@@ -14,8 +14,10 @@
 
 
 // Exported Types Constants and Macros -----------------------------------------
-void Manager (char * ant_name, char * ant_params);
 void Manager_Timeouts (void);
+// void Manager (char * ant_name, char * ant_params);
+void Manager (char * ant_name);
+
 
 
 // Exported Functions ----------------------------------------------------------

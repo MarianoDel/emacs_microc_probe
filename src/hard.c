@@ -42,6 +42,44 @@ unsigned char Led_Is_On (void)
 }
 
 
+unsigned char Pa13_Input (void)
+{
+    return PA13_INPUT;
+}
+
+
+unsigned char Start_Btn (void)
+{
+    unsigned int temp;
+    unsigned char last_led_status = 0;
+    unsigned char pa13_input_state = 0;
+
+    last_led_status = Led_Is_On ();
+
+    // PA13 to input
+    temp = GPIOA->MODER;    // 2 bits por pin
+    temp &= 0xF3FFFFFF;    // PA13 input
+    temp |= 0x00000000;
+    GPIOA->MODER = temp;
+
+    Wait_ms(1);
+    pa13_input_state = Pa13_Input ();
+    
+    temp = GPIOA->MODER;    // 2 bits por pin
+    temp &= 0xF3FFFFFF;    // PA13 output
+    temp |= 0x04000000;
+    GPIOA->MODER = temp;
+
+    // get back led status
+    if (last_led_status)
+        Led_On ();
+    else
+        Led_Off ();
+    
+    return pa13_input_state;
+}
+
+
 //--- end of file ---//
 
 

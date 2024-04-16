@@ -17,7 +17,10 @@
 // #include "adc.h"
 #include "dma.h"
 #include "tim.h"
+#include "i2c.h"
 // #include "flash_program.h"
+
+#include "screen1.h"
 
 
 #include <stdio.h>
@@ -39,10 +42,7 @@ void TF_Led (void);
 void TF_Pa8 (void);
 void TF_Led_Usart1_Tx (void);
 void TF_Led_Usart1_TxRx (void);
-void TF_Temp_Channel (void);
-void TF_ts_cal1 (void);
-void TF_Temperature (void);
-
+void TF_Oled_Screen (void);
 
 
 // Module Functions ------------------------------------------------------------
@@ -50,10 +50,13 @@ void TF_Hardware_Tests (void)
 {
     // TF_Led ();    //simple led functionality
 
-    TF_Pa8 ();
+    // TF_Pa8 ();
+    
     // TF_Led_Usart1_Tx ();
 
     // TF_Led_Usart1_TxRx ();
+
+    TF_Oled_Screen ();
 
 }
 
@@ -160,5 +163,67 @@ void TF_Led_Usart1_TxRx (void)
 }
 
 
+extern uint8_t SSD1306_buffer[];
+void TF_Oled_Screen (void)
+{
+    for (int i = 0; i < 3; i++)
+    {
+        LED_ON;
+        Wait_ms(300);
+        LED_OFF;
+        Wait_ms(300);
+    }
+    
+    // OLED Init
+    I2C2_Init();
+    Wait_ms(2000);
 
+    //primer pantalla
+    LED_ON;
+    SCREEN_Init();
+
+    int j = 0;
+    char lbuf[10] = { 0 };
+    while (1)
+    {
+        // estas 3 juntas ok
+        // SCREEN_Clear ();        
+        // SCREEN_Text2_Line1 ("Probe012345");
+        // SCREEN_Text2_Line2 ("0123456789");    // oka        
+
+        // estas 3 juntas err en vuelta 3 o 4 (oka con Wait_ms)
+        // SCREEN_Clear ();        
+        // SCREEN_Text2_Line1 ("Probe01234");
+        // SCREEN_Text2_Line2 ("0123456789");    // oka        
+        
+        // estas 3 juntas ok
+        // SCREEN_Clear ();        
+        // SCREEN_Text2_Line1 ("Probe0123");
+        // SCREEN_Text2_Line2 ("012345678");    // oka
+        
+        if (j < 1000)
+            j++;
+        else
+            j = 0;
+        
+        sprintf(lbuf, "cnt: %d", j);
+        SCREEN_Clear ();
+        SCREEN_Text2_Line1 ("Probe01234");
+        SCREEN_Text2_Line2 (lbuf);    // err
+                
+        for (int i = 0; i < 30; i++)
+        {
+            if (LED)
+                LED_OFF;
+            else
+                LED_ON;
+
+            Wait_ms(200);
+        }
+
+        Wait_ms(1000);
+        Wait_ms(1000);        
+    }
+    
+}
 //--- end of file ---//

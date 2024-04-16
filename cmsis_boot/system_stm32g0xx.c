@@ -231,7 +231,7 @@ void SystemClock64MHz (void)
     //AHB FREQ CONFIG
 
     //APB FREQ CONFIG
-    // RCC->CFGR |= RCC_CFGR_PPRE_2;    //HCLK / 2 -> PCLK = 32MHz
+    RCC->CFGR |= RCC_CFGR_PPRE_2;    //HCLK / 2 -> PCLK = 32MHz
     
     // //SYSTEM CLOCK SOURCE
     // //Set PLLRCLK as system source

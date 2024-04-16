@@ -28,9 +28,6 @@
 
 // Exported Types Constants & Macros  ------------------------------------------
 //GPIOA pin0
-#define LED    ((GPIOA->ODR & 0x0001) == 0)
-#define LED_OFF    (GPIOA->BSRR = 0x00000001)
-#define LED_ON    (GPIOA->BSRR = 0x00010000)
 
 //GPIOA pin1
 // #define CTRL_BKL    ((GPIOA->ODR & 0x0002) != 0)
@@ -52,6 +49,10 @@
 #define PA8_ON    (GPIOA->BSRR = 0x00000100)
 #define PA8_OFF    (GPIOA->BSRR = 0x01000000)
 
+//GPIOA pin11
+#define PA11    ((GPIOA->ODR & 0x0800) != 0)
+#define PA11_ON    (GPIOA->BSRR = 0x00000800)
+#define PA11_OFF    (GPIOA->BSRR = 0x08000000)
 
 //GPIOA pin12
 #define PA12    ((GPIOA->ODR & 0x1000) != 0)
@@ -59,6 +60,9 @@
 #define PA12_OFF    (GPIOA->BSRR = 0x10000000)
 
 //GPIOA pin13
+#define LED    (!(PA13))
+#define LED_ON    PA13_OFF
+#define LED_OFF    PA13_ON
 #define PA13    ((GPIOA->ODR & 0x2000) != 0)
 #define PA13_ON    (GPIOA->BSRR = 0x00002000)
 #define PA13_OFF    (GPIOA->BSRR = 0x20000000)
@@ -86,6 +90,6 @@ void Led_On (void);
 void Led_Off (void);
 unsigned char Led_Is_On (void);
     
-
+unsigned char Start_Btn (void);
 
 #endif /* HARD_H_ */

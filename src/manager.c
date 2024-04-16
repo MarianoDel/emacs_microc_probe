@@ -10,11 +10,11 @@
 
 // Includes --------------------------------------------------------------------
 #include "manager.h"
-#include "adc.h"
+#include "hard.h"
 #include "usart.h"
 #include "tim.h"
 #include "comms.h"
-// #include "temp_sensor.h"
+#include "screen1.h"
 
 
 #include <stdio.h>
@@ -22,25 +22,24 @@
 
 // Module Private Types & Macros -----------------------------------------------
 typedef enum {
+    INIT,
     STAND_BY,
     CONNECT,
     TX_SERIE,
     TX_SERIE2,
-    TX_SERIE_NC,
-    TX_SERIE2_NC,
-    RX_SERIE,
-    TEMP_SENSE
+    RX_SERIE
     
 } manager_states_e;
 
 
 // Externals -------------------------------------------------------------------
-extern volatile unsigned short adc_ch [];
 
 
 // Globals ---------------------------------------------------------------------
-manager_states_e mngr_state = STAND_BY;
+manager_states_e mngr_state = INIT;
+manager_states_e mngr_call_state = STAND_BY;
 volatile unsigned short timer_mngr = 0;
+volatile unsigned short timer_start = 0;
 volatile unsigned char timer_1sec_mngr = 0;
 volatile unsigned short millis = 0;
 comms_answers_e answer = COMMS_ERROR;
@@ -50,30 +49,105 @@ comms_answers_e answer = COMMS_ERROR;
 
 
 // Module Functions ------------------------------------------------------------
-void Manager (char * ant_name, char * ant_params)
+void Manager_Timeouts (void)
 {
+    if (timer_mngr)
+        timer_mngr--;    
+
+    if (timer_start)
+        timer_start--;
+    
+    if (millis < 1000)
+        millis++;
+    else
+    {
+        millis = 0;
+        if (timer_1sec_mngr)
+            timer_1sec_mngr--;
+    }
+}
+
+
+void Manager (char * probe_name)
+{
+    static unsigned char start_sended = 0;
+    static unsigned short start_cnt = 0;
     char s_msg [100];
     
     switch (mngr_state)
     {
+    case INIT:
+        // show oled info
+        SCREEN_Text2_BlankLine1 ();
+        SCREEN_Text2_BlankLine2 ();
+
+        // SCREEN_Text2_Line1 ("Infinity  ");        
+        SCREEN_Text2_Line1 ("        NC");
+        SCREEN_Text2_Line1 (probe_name);
+        start_cnt = 0;
+        mngr_state++;
+        break;
+        
     case STAND_BY:
-        // send antenna params on each second waiting for answers
+        // send probe info every second waiting for answers        
         Led_Off();
 
         if (!timer_mngr)
         {
             Led_On();
-            mngr_state = TX_SERIE_NC;
+            mngr_state = TX_SERIE;
+            mngr_call_state = STAND_BY;
             Usart1RxDisable();
-            Usart1Send(ant_params);
+            Usart1Send(probe_name);
         }
 
         if (Usart1HaveData())
         {
             mngr_state = RX_SERIE;
+            mngr_call_state = STAND_BY;            
         }
-        break;
 
+        if (!timer_start)
+        {
+            if (start_sended)
+            {
+                start_sended = 0;
+                SCREEN_Text2_BlankLine2 ();
+            }
+            else if (Start_Btn())
+            {
+                Led_On();
+                mngr_state = TX_SERIE;
+                mngr_call_state = STAND_BY;
+                Usart1RxDisable();
+                Usart1Send("start\n");
+
+                if (start_cnt < 9999)
+                    start_cnt++;
+                else
+                    start_cnt = 0;
+
+                timer_start = 2000;
+                start_sended = 1;
+                sprintf(s_msg, "Start %4d", start_cnt);
+                SCREEN_Text2_BlankLine2 ();            
+                SCREEN_Text2_Line2 (s_msg);
+            }
+        }
+
+
+        if ((answer == COMMS_KEEPALIVE) ||
+            (answer == COMMS_GET_NAME))
+        {
+            // show oled info
+            SCREEN_Text2_BlankLine1 ();
+            SCREEN_Text2_Line1 ("        Cn");
+            SCREEN_Text2_Line1 (probe_name);
+            
+            mngr_state = CONNECT;
+        }        
+        break;
+        
     case CONNECT:
         //cuando se agota timer_1_seg salgo a STAND_BY
         //me fijo si debo contestar algo
@@ -84,20 +158,9 @@ void Manager (char * ant_name, char * ant_params)
             answer = COMMS_ERROR;
             Led_Off();
             mngr_state = TX_SERIE;
-            //apago RX
+            mngr_call_state = CONNECT;            
             Usart1RxDisable();
             Usart1Send("ok\r\n");
-        }
-
-        if (answer == COMMS_GET_PARAMS)
-        {
-            Wait_ms(5);
-            answer = COMMS_ERROR;
-            Led_Off();
-            mngr_state = TX_SERIE;
-            //apago RX
-            Usart1RxDisable();
-            Usart1Send(ant_params);
         }
 
         if (answer == COMMS_GET_NAME)
@@ -106,46 +169,57 @@ void Manager (char * ant_name, char * ant_params)
             answer = COMMS_ERROR;
             Led_Off();
             mngr_state = TX_SERIE;
-            //apago RX
+            mngr_call_state = CONNECT;
             Usart1RxDisable();
-            Usart1Send(ant_name);
+            Usart1Send(probe_name);
         }
 
-        if (answer == COMMS_GET_TEMP)
-        {
-            Wait_ms(5);
-            Led_Off();
-
-            short temp = Temp_Sensor_GetTemp (Temp_Channel);
-            // short temp = 0         
-
-            //reviso errores de conversion
-            if ((temp >= 0) && (temp <= 85))
-            {
-                char s_temp [30] = { 0 };
-                sprintf(s_temp, "temp,%03d.00\r\n", temp);
-                //apago RX
-                Usart1RxDisable();
-                Usart1Send(s_temp);
-
-                answer = COMMS_ERROR;
-                mngr_state = TX_SERIE;
-            }
-        }
 
         if ((Usart1HaveData()) && (mngr_state == CONNECT))
-        {
+        {            
             mngr_state = RX_SERIE;
+            mngr_call_state = CONNECT;
         }
 
         if (!timer_1sec_mngr)    // more than 10 secs without comms
         {
+            // show oled info
+            SCREEN_Text2_BlankLine1 ();
+            SCREEN_Text2_Line1 ("        NC");
+            SCREEN_Text2_Line1 (probe_name);
+            
             mngr_state = STAND_BY;
         }
+
+        if (Start_Btn())
+        {
+            Led_On();
+            mngr_state = TX_SERIE;
+            mngr_call_state = CONNECT;
+            Usart1RxDisable();
+            Usart1Send("start\n");
+
+            if (start_cnt < 9999)
+                start_cnt++;
+            else
+                start_cnt = 0;
+
+            timer_start = 2000;
+            start_sended = 1;
+            sprintf(s_msg, "Start %4d", start_cnt);
+            SCREEN_Text2_BlankLine2 ();            
+            SCREEN_Text2_Line2 (s_msg);
+        }
+
+        if ((start_sended) && (!timer_start))
+        {
+            start_sended = 0;
+            SCREEN_Text2_BlankLine2 ();
+        }        
         break;
 
     case TX_SERIE:
-        //espero terminar de transmitir
+        // wait end of transmission        
         if (Usart1EndOfTx())
         {
             mngr_state = TX_SERIE2;
@@ -156,33 +230,22 @@ void Manager (char * ant_name, char * ant_params)
     case TX_SERIE2:
         if (!timer_mngr)
         {
-            mngr_state = CONNECT;
-            Led_On();
+            mngr_state = mngr_call_state;
+
+            if (Led_Is_On())
+                Led_Off();
+            else
+                Led_On();
+            
             Usart1RxEnable();
-        }
-        break;
 
-    case TX_SERIE_NC:
-        //espero terminar de transmitir
-        if (Usart1EndOfTx())
-        {
-            mngr_state = TX_SERIE2_NC;
-            timer_mngr = 2;
-        }
-        break;
-
-    case TX_SERIE2_NC:
-        if (!timer_mngr)
-        {
-            mngr_state = STAND_BY;
             timer_mngr = 1000;
-            Led_Off();
-            Usart1RxEnable();
+            
         }
         break;
 
     case RX_SERIE:
-        // check the rx msg, go to connect on goog msg
+        // check the rx msg, go to called state
         if (Usart1HaveData())
         {
             Usart1ReadBuffer((unsigned char *)s_msg, sizeof(s_msg));
@@ -193,16 +256,6 @@ void Manager (char * ant_name, char * ant_params)
 
             switch (a)
             {
-            case COMMS_GET_PARAMS:
-                answer = COMMS_GET_PARAMS;
-                timer_1sec_mngr = 10;
-                break;
-
-            case COMMS_GET_TEMP:
-                answer = COMMS_GET_TEMP;
-                timer_1sec_mngr = 10;
-                break;
-
             case COMMS_GET_NAME:
                 answer = COMMS_GET_NAME;
                 timer_1sec_mngr = 10;
@@ -219,54 +272,12 @@ void Manager (char * ant_name, char * ant_params)
             }
         }
         
-        if (timer_1sec_mngr == 0)
-            mngr_state = STAND_BY;
-        else
-            mngr_state = CONNECT;
-
-        break;
-
-    case TEMP_SENSE:
+        mngr_state = mngr_call_state;
         break;
 
     default:
         mngr_state = STAND_BY;
         break;
-    }
-
-    // save flash after configs
-//     if ((need_to_save) && (!need_to_save_timer))
-//     {
-//         need_to_save = Flash_WriteConfigurations();
-
-// #ifdef USART_DEBUG_MODE
-//         if (need_to_save)
-//             UsartDebug((char *) "Memory Saved OK!\n");
-//         else
-//             UsartDebug((char *) "Memory problems\n");
-// #endif
-
-//         need_to_save = 0;
-//     }
-        
-}
-
-
-void Manager_Timeouts (void)
-{
-    // if (need_to_save_timer)
-    //     need_to_save_timer--;
-
-    if (timer_mngr)
-        timer_mngr--;    
-
-    if (millis < 1000)
-        millis++;
-    else
-    {
-        millis = 0;
-        if (timer_1sec_mngr)
-            timer_1sec_mngr--;
     }
 }
 

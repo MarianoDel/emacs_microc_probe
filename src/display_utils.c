@@ -1,1 +1,0 @@
-../../emacs_dexel_rgb_6ch/src/display_utils.c

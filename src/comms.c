@@ -22,11 +22,11 @@
 comms_answers_e Comms_CheckMsg (char * pStr)
 {
 
-    if (strncmp(pStr, "get_params", sizeof("get_params") - 1) == 0)
-        return COMMS_GET_PARAMS;
+    // if (strncmp(pStr, "get_params", sizeof("get_params") - 1) == 0)
+    //     return COMMS_GET_PARAMS;
 
-    if (strncmp(pStr, "get_temp", sizeof("get_temp") - 1) == 0)
-        return COMMS_GET_TEMP;
+    // if (strncmp(pStr, "get_temp", sizeof("get_temp") - 1) == 0)
+    //     return COMMS_GET_TEMP;
 
     if (strncmp(pStr, "keepalive", sizeof("keepalive") - 1) == 0)
         return COMMS_KEEPALIVE;

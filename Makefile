@@ -79,13 +79,16 @@ SRC += ./src/tim.c
 # SRC += ./src/adc.c
 SRC += ./src/dma.c
 SRC += ./src/usart.c
+SRC += ./src/i2c.c
 # SRC += ./src/flash_program.c
 SRC += ./src/hard.c
 
 SRC += ./src/test_functions.c
 SRC += ./src/comms.c
-# SRC += ./src/dsp.c
-# SRC += ./src/temp_sensor.c
+
+SRC += ./src/screen1.c
+SRC += ./src/ssd1306_display1.c
+SRC += ./src/ssd1306_gfx1.c
 SRC += ./src/manager.c
 
 
