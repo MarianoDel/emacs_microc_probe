@@ -23,9 +23,21 @@
 #define USART2_CLK_ON    (RCC->APBENR1 |= 0x00020000)
 #define USART2_CLK_OFF    (RCC->APBENR1 &= ~0x00020000)
 
+// USART with PCKL 32MHz or PCKL 64MHz
+#define USART_PCKL32M
+// #define USART_PCKL64M
+
+#ifdef USART_PCKL64M
 #define USART_64MHz_9600    6666
 #define USART_64MHz_115200    555
 #define USART_64MHz_250000    256
+#endif
+#ifdef USART_PCKL32M
+#define USART_64MHz_9600    3333
+#define USART_64MHz_115200    277
+#define USART_64MHz_250000    128
+#endif
+
 #define USART_16MHz_9600    1666
 
 
@@ -75,7 +87,6 @@ void Usart1Config(void)
 
     // Usart1 9600 8N1 fifo disabled oversampled 16
 #if (defined CLOCK_FREQ_64_MHZ)
-    // PCKL 64MHz
     USART1->BRR = USART_64MHz_9600;
 #elif (defined CLOCK_FREQ_16_MHZ)
     // PCKL 16MHz

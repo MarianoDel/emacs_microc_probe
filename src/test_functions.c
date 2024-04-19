@@ -39,6 +39,8 @@ extern volatile unsigned short timer_standby;
 
 // Module Private Functions ----------------------------------------------------
 void TF_Led (void);
+void TF_Led_2 (void);
+void TF_Led_3 (void);
 void TF_Pa8 (void);
 void TF_Led_Usart1_Tx (void);
 void TF_Led_Usart1_TxRx (void);
@@ -50,32 +52,61 @@ void TF_Hardware_Tests (void)
 {
     // TF_Led ();    //simple led functionality
 
+    // TF_Led_2 ();    //simple led functionality
+
+    TF_Led_3 ();    //simple led functionality
+
     // TF_Pa8 ();
     
     // TF_Led_Usart1_Tx ();
 
     // TF_Led_Usart1_TxRx ();
 
-    TF_Oled_Screen ();
+    // TF_Oled_Screen ();
 
 }
 
 
 void TF_Led (void)
 {
-    Wait_ms (1000);
+    while (1)
+    {
+        Led_On();
+        Wait_ms(1000);
+        Led_Off();
+        Wait_ms(4000);
+    }
+}
 
-    LED_ON;
-    while (1);
-    // while (1)
-    // {
-    //     if (Led_Is_On())
-    //         Led_Off();
-    //     else
-    //         Led_On();
 
-    //     Wait_ms(300);
-    // }
+void TF_Led_2 (void)
+{
+    while (1)
+    {
+        Led_On();        
+        Wait_ms(1000);
+        if (Led_Is_On())
+        {
+            Led_Off();
+            Wait_ms(1000);
+        }
+    }
+}
+
+
+void TF_Led_3 (void)
+{
+    while (1)
+    {
+        Led_On();        
+        Wait_ms(100);
+        if (Start_Btn())
+        {
+            Led_Off();
+            Wait_ms(1000);            
+        }
+        Wait_ms(1000);
+    }
 }
 
 

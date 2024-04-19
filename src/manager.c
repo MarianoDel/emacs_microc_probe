@@ -99,6 +99,7 @@ void Manager (char * probe_name)
             mngr_call_state = STAND_BY;
             Usart1RxDisable();
             Usart1Send(probe_name);
+            Usart1Send("\r\n");
         }
 
         if (Usart1HaveData())
@@ -120,7 +121,7 @@ void Manager (char * probe_name)
                 mngr_state = TX_SERIE;
                 mngr_call_state = STAND_BY;
                 Usart1RxDisable();
-                Usart1Send("start\n");
+                Usart1Send("start\r\n");
 
                 if (start_cnt < 9999)
                     start_cnt++;
@@ -152,11 +153,12 @@ void Manager (char * probe_name)
         //cuando se agota timer_1_seg salgo a STAND_BY
         //me fijo si debo contestar algo
         Led_On();
+
         if (answer == COMMS_KEEPALIVE)
         {
+            Led_Off();
             Wait_ms(5);
             answer = COMMS_ERROR;
-            Led_Off();
             mngr_state = TX_SERIE;
             mngr_call_state = CONNECT;            
             Usart1RxDisable();
@@ -165,13 +167,14 @@ void Manager (char * probe_name)
 
         if (answer == COMMS_GET_NAME)
         {
+            Led_Off();
             Wait_ms(5);
             answer = COMMS_ERROR;
-            Led_Off();
             mngr_state = TX_SERIE;
             mngr_call_state = CONNECT;
             Usart1RxDisable();
             Usart1Send(probe_name);
+            Usart1Send("\r\n");
         }
 
 
@@ -191,31 +194,33 @@ void Manager (char * probe_name)
             mngr_state = STAND_BY;
         }
 
-        if (Start_Btn())
+        if (!timer_start)
         {
-            Led_On();
-            mngr_state = TX_SERIE;
-            mngr_call_state = CONNECT;
-            Usart1RxDisable();
-            Usart1Send("start\n");
+            if (start_sended)
+            {
+                start_sended = 0;
+                SCREEN_Text2_BlankLine2 ();
+            }
+            else if (Start_Btn())
+            {
+                Led_Off();
+                mngr_state = TX_SERIE;
+                mngr_call_state = CONNECT;
+                Usart1RxDisable();
+                Usart1Send("start\r\n");
 
-            if (start_cnt < 9999)
-                start_cnt++;
-            else
-                start_cnt = 0;
+                if (start_cnt < 9999)
+                    start_cnt++;
+                else
+                    start_cnt = 0;
 
-            timer_start = 2000;
-            start_sended = 1;
-            sprintf(s_msg, "Start %4d", start_cnt);
-            SCREEN_Text2_BlankLine2 ();            
-            SCREEN_Text2_Line2 (s_msg);
+                timer_start = 2000;
+                start_sended = 1;
+                sprintf(s_msg, "Start %4d", start_cnt);
+                SCREEN_Text2_BlankLine2 ();            
+                SCREEN_Text2_Line2 (s_msg);
+            }
         }
-
-        if ((start_sended) && (!timer_start))
-        {
-            start_sended = 0;
-            SCREEN_Text2_BlankLine2 ();
-        }        
         break;
 
     case TX_SERIE:
@@ -232,10 +237,10 @@ void Manager (char * probe_name)
         {
             mngr_state = mngr_call_state;
 
-            if (Led_Is_On())
-                Led_Off();
-            else
-                Led_On();
+            // if (Led_Is_On())
+            //     Led_Off();
+            // else
+            //     Led_On();
             
             Usart1RxEnable();
 

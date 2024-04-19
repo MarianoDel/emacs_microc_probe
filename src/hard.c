@@ -54,8 +54,13 @@ unsigned char Start_Btn (void)
     unsigned char last_led_status = 0;
     unsigned char pa13_input_state = 0;
 
-    last_led_status = Led_Is_On ();
+    if (Led_Is_On())
+        last_led_status = 1;
 
+    Wait_ms (10);
+    // Led_On();
+    // Wait_ms (1);
+    
     // PA13 to input
     temp = GPIOA->MODER;    // 2 bits por pin
     temp &= 0xF3FFFFFF;    // PA13 input
