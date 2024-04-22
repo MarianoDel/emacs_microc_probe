@@ -86,6 +86,7 @@
 
 
 // Exported Functions -- Implemented on main -----------------------------------
+void Hard_Timeouts (void);
 void Led_On (void);
 void Led_Off (void);
 unsigned char Led_Is_On (void);

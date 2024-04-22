@@ -98,8 +98,8 @@ void Manager (char * probe_name)
             mngr_state = TX_SERIE;
             mngr_call_state = STAND_BY;
             Usart1RxDisable();
-            Usart1Send(probe_name);
-            Usart1Send("\r\n");
+            sprintf(s_msg, "name %s\r\n", probe_name);
+            Usart1Send(s_msg);
         }
 
         if (Usart1HaveData())
@@ -173,8 +173,8 @@ void Manager (char * probe_name)
             mngr_state = TX_SERIE;
             mngr_call_state = CONNECT;
             Usart1RxDisable();
-            Usart1Send(probe_name);
-            Usart1Send("\r\n");
+            sprintf(s_msg, "name %s\r\n", probe_name);
+            Usart1Send(s_msg);
         }
 
 

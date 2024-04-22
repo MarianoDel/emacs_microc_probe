@@ -138,6 +138,8 @@ void TimingDelay_Decrement(void)
     TIM_Timeouts ();
 
     Manager_Timeouts ();
+
+    Hard_Timeouts ();
     
     if (timer_standby)
         timer_standby--;
