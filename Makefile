@@ -283,15 +283,15 @@ tests_manager:
 
 tests_oled_screen:
 	# first compile common modules (modules to test and dependencies)
-	gcc -c src/screen.c -I. $(INCDIR)
-	gcc -c src/ssd1306_display.c -I. $(INCDIR)
-	gcc -c src/ssd1306_gfx.c -I. $(INCDIR)
+	gcc -c src/screen1.c -I. $(INCDIR)
+	gcc -c src/ssd1306_display1.c -I. $(INCDIR)
+	gcc -c src/ssd1306_gfx1.c -I. $(INCDIR)
 	# the module that implements tests_lcd_application.h functions
 	gcc -c `pkg-config --cflags gtk+-3.0` src/tests_oled_app.c -o tests_oled_app.o
 	# then the gtk lib modules
 	gcc -c `pkg-config --cflags gtk+-3.0` src/tests_glade_oled.c -o tests_glade_oled.o
 	# link everything
-	gcc tests_glade_oled.o tests_oled_app.o screen.o ssd1306_display.o ssd1306_gfx.o `pkg-config --libs gtk+-3.0` -o tests_gtk
+	gcc tests_glade_oled.o tests_oled_app.o screen1.o ssd1306_display1.o ssd1306_gfx1.o `pkg-config --libs gtk+-3.0` -o tests_gtk
 	# run global tags
 	gtags -q
 	# run the simulation
@@ -300,17 +300,17 @@ tests_oled_screen:
 
 tests_oled_probe_menu:
 	# first compile common modules (modules to test and dependencies)
-	gcc -c src/screen.c -I. $(INCDIR)
-	gcc -c src/ssd1306_display.c -I. $(INCDIR)
-	gcc -c src/ssd1306_gfx.c -I. $(INCDIR)
-	gcc -c src/display_utils.c -I. $(INCDIR)
+	gcc -c src/screen1.c -I. $(INCDIR)
+	gcc -c src/ssd1306_display1.c -I. $(INCDIR)
+	gcc -c src/ssd1306_gfx1.c -I. $(INCDIR)
+	gcc -c src/display_utils1.c -I. $(INCDIR)
 	gcc -c src/probe_menu.c -I. $(INCDIR)
 	# the module that implements tests_lcd_application.h functions
 	gcc -c `pkg-config --cflags gtk+-3.0` src/tests_oled_probe_menu.c -o tests_oled_probe_menu.o
 	# then the gtk lib modules
 	gcc -c `pkg-config --cflags gtk+-3.0` src/tests_glade_oled.c -o tests_glade_oled.o
 	# link everything
-	gcc tests_glade_oled.o tests_oled_probe_menu.o probe_menu.o display_utils.o screen.o ssd1306_display.o ssd1306_gfx.o `pkg-config --libs gtk+-3.0` -o tests_gtk
+	gcc tests_glade_oled.o tests_oled_probe_menu.o probe_menu.o display_utils1.o screen1.o ssd1306_display1.o ssd1306_gfx1.o `pkg-config --libs gtk+-3.0` -o tests_gtk
 	# run global tags
 	gtags -q
 	# run the simulation

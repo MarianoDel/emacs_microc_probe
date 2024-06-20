@@ -8,7 +8,7 @@
 #include "tests_oled_application.h"
 
 // Application Includes needed for this test
-#include "screen.h"
+#include "screen1.h"
 
 
 // Module Types Constants and Macros -------------------------------------------

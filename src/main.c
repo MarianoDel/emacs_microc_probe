@@ -76,9 +76,9 @@ int main(void)
     // Delay for pins alternative
     for (int i = 0; i < 3; i++)
     {
-        LED_ON;
+        Led_On();
         Wait_ms(300);
-        LED_OFF;
+        Led_Off();
         Wait_ms(300);
     }
 
@@ -89,9 +89,9 @@ int main(void)
     I2C2_Init();
 
     //primer pantalla
-    LED_ON;
+    Led_On();
     SCREEN_Init();
-    LED_OFF;
+    Led_Off();
     
     SCREEN_Clear ();        
     SCREEN_Text2_Line1 ("Infinity  ");    

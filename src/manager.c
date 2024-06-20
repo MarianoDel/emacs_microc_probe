@@ -140,7 +140,15 @@ void Manager (char * probe_name)
         if ((answer == COMMS_KEEPALIVE) ||
             (answer == COMMS_GET_NAME))
         {
-            // show oled info
+            // // first ok answer
+            // Wait_ms(5);
+            // answer = COMMS_ERROR;
+            // mngr_state = TX_SERIE;
+            // mngr_call_state = CONNECT;            
+            // Usart1RxDisable();
+            // Usart1Send("ok\r\n");
+            
+            // show oled info -- 90ms delay
             SCREEN_Text2_BlankLine1 ();
             SCREEN_Text2_Line1 ("        Cn");
             SCREEN_Text2_Line1 (probe_name);
