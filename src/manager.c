@@ -23,6 +23,7 @@
 // Module Private Types & Macros -----------------------------------------------
 typedef enum {
     INIT,
+    INIT_WAIT_FREE,    
     STAND_BY,
     CONNECT,
     TX_SERIE,
@@ -45,7 +46,13 @@ volatile unsigned short millis = 0;
 comms_answers_e answer = COMMS_ERROR;
 
 
+// Config Probes Names and Features
+// char s_probe [11] = { "Probe1" };
+char s_probe [11] = { "NervSync" };
+
+
 // Module Private Functions ----------------------------------------------------
+void Manager_Transmit (char * buff);
 
 
 // Module Functions ------------------------------------------------------------
@@ -68,7 +75,7 @@ void Manager_Timeouts (void)
 }
 
 
-void Manager (char * probe_name)
+void Manager (void)
 {
     static unsigned char start_sended = 0;
     static unsigned short start_cnt = 0;
@@ -81,12 +88,21 @@ void Manager (char * probe_name)
         SCREEN_Text2_BlankLine1 ();
         SCREEN_Text2_BlankLine2 ();
 
-        // SCREEN_Text2_Line1 ("Infinity  ");        
-        SCREEN_Text2_Line1 ("        NC");
-        SCREEN_Text2_Line1 (probe_name);
+        SCREEN_Text2_Line1 (s_probe);
+	SCREEN_Text2_Line2 ("Wait Conn ");
+
         start_cnt = 0;
         mngr_state++;
         break;
+
+    case INIT_WAIT_FREE:
+	if ((!Start_Btn_Check_Change()) &&
+	    (!Start_Btn_Check_Start()))
+	{
+	    mngr_state++;
+	    Start_Btn_Check_Change_Reset();
+	}
+	break;
         
     case STAND_BY:
         // send probe info every second waiting for answers        
@@ -97,9 +113,9 @@ void Manager (char * probe_name)
             Led_On();
             mngr_state = TX_SERIE;
             mngr_call_state = STAND_BY;
-            Usart1RxDisable();
-            sprintf(s_msg, "name %s\r\n", probe_name);
-            Usart1Send(s_msg);
+            sprintf(s_msg, "name %s\r\n", s_probe);
+            Manager_Transmit(s_msg);
+	    break;
         }
 
         if (Usart1HaveData())
@@ -115,46 +131,35 @@ void Manager (char * probe_name)
                 start_sended = 0;
                 SCREEN_Text2_BlankLine2 ();
             }
-            else if (Start_Btn())
+            else if (Start_Btn_Check_Start())
             {
-                Led_On();
-                mngr_state = TX_SERIE;
-                mngr_call_state = STAND_BY;
-                Usart1RxDisable();
-                Usart1Send("start\r\n");
-
-                if (start_cnt < 9999)
-                    start_cnt++;
-                else
-                    start_cnt = 0;
-
-                timer_start = 2000;
+                timer_start = 1000;
                 start_sended = 1;
-                sprintf(s_msg, "Start %4d", start_cnt);
                 SCREEN_Text2_BlankLine2 ();            
-                SCREEN_Text2_Line2 (s_msg);
+                SCREEN_Text2_Line2 ("Wait");
             }
         }
 
-
-        if ((answer == COMMS_KEEPALIVE) ||
-            (answer == COMMS_GET_NAME))
+        if (answer == COMMS_KEEPALIVE)
         {
-            // // first ok answer
-            // Wait_ms(5);
-            // answer = COMMS_ERROR;
-            // mngr_state = TX_SERIE;
-            // mngr_call_state = CONNECT;            
-            // Usart1RxDisable();
-            // Usart1Send("ok\r\n");
-            
+            answer = COMMS_ERROR;	    
+            // first ok answer
             // show oled info -- 90ms delay
-            SCREEN_Text2_BlankLine1 ();
-            SCREEN_Text2_Line1 ("        Cn");
-            SCREEN_Text2_Line1 (probe_name);
-            
+            SCREEN_Text2_BlankLine2 ();	    
+            SCREEN_Text2_Line2 ("Connected!");
             mngr_state = CONNECT;
-        }        
+	    break;
+        }
+
+	if (answer == COMMS_GET_NAME)
+	{
+            answer = COMMS_ERROR;	    
+            mngr_state = TX_SERIE;
+            mngr_call_state = STAND_BY;
+            sprintf(s_msg, "name %s\r\n", s_probe);
+            Manager_Transmit(s_msg);
+	    break;
+	}
         break;
         
     case CONNECT:
@@ -164,42 +169,38 @@ void Manager (char * probe_name)
 
         if (answer == COMMS_KEEPALIVE)
         {
+            answer = COMMS_ERROR;
             Led_Off();
             Wait_ms(5);
-            answer = COMMS_ERROR;
             mngr_state = TX_SERIE;
             mngr_call_state = CONNECT;            
-            Usart1RxDisable();
-            Usart1Send("ok\r\n");
+            Manager_Transmit("ok\r\n");
+	    break;
         }
 
         if (answer == COMMS_GET_NAME)
         {
-            Led_Off();
-            Wait_ms(5);
             answer = COMMS_ERROR;
+	    Led_Off();
+            Wait_ms(5);
             mngr_state = TX_SERIE;
-            mngr_call_state = CONNECT;
-            Usart1RxDisable();
-            sprintf(s_msg, "name %s\r\n", probe_name);
-            Usart1Send(s_msg);
+            sprintf(s_msg, "name %s\r\n", s_probe);
+            Manager_Transmit("ok\r\n");
+	    break;
         }
+	
 
-
-        if ((Usart1HaveData()) && (mngr_state == CONNECT))
+        if (Usart1HaveData())
         {            
             mngr_state = RX_SERIE;
             mngr_call_state = CONNECT;
+	    break;
         }
 
         if (!timer_1sec_mngr)    // more than 10 secs without comms
         {
-            // show oled info
-            SCREEN_Text2_BlankLine1 ();
-            SCREEN_Text2_Line1 ("        NC");
-            SCREEN_Text2_Line1 (probe_name);
-            
-            mngr_state = STAND_BY;
+	    mngr_state = INIT;
+	    break;
         }
 
         if (!timer_start)
@@ -209,13 +210,12 @@ void Manager (char * probe_name)
                 start_sended = 0;
                 SCREEN_Text2_BlankLine2 ();
             }
-            else if (Start_Btn())
+            else if (Start_Btn_Check_Start())
             {
                 Led_Off();
                 mngr_state = TX_SERIE;
                 mngr_call_state = CONNECT;
-                Usart1RxDisable();
-                Usart1Send("start\r\n");
+                Manager_Transmit("start\r\n");
 
                 if (start_cnt < 9999)
                     start_cnt++;
@@ -244,16 +244,8 @@ void Manager (char * probe_name)
         if (!timer_mngr)
         {
             mngr_state = mngr_call_state;
-
-            // if (Led_Is_On())
-            //     Led_Off();
-            // else
-            //     Led_On();
-            
             Usart1RxEnable();
-
             timer_mngr = 1000;
-            
         }
         break;
 
@@ -289,9 +281,35 @@ void Manager (char * probe_name)
         break;
 
     default:
-        mngr_state = STAND_BY;
+        mngr_state = INIT;
         break;
     }
+
+    // concurrent things
+    Start_Btn_Check_Update ();
+    
+    if ((Start_Btn_Check_Change()) &&
+	(mngr_state > INIT_WAIT_FREE))
+    {
+	// change the probe name
+	if (!strncmp(s_probe, "NervSync", sizeof("NervSync") - 1))
+	    strcpy(s_probe, "CellSync");
+	else
+	    strcpy(s_probe, "NervSync");
+
+	sprintf(s_msg, "name %s\r\n", s_probe);
+	Manager_Transmit(s_msg);
+	mngr_state = INIT;
+    }
+
+}
+
+void Manager_Transmit (char * buff)
+{
+    Usart1RxDisable();
+    // clean tx
+    Usart1Send("\r\n");
+    Usart1Send(buff);    
 }
 
 

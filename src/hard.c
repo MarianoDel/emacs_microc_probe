@@ -18,7 +18,7 @@
 
 
 // Globals ---------------------------------------------------------------------
-volatile unsigned short pa13_input_timer = 0;
+volatile unsigned short hard_button_start_timer = 0;
 
 
 // Module Private Functions ----------------------------------------------------
@@ -28,8 +28,8 @@ void Hard_Delay_us (void);
 // Module Functions ------------------------------------------------------------
 void Hard_Timeouts (void)
 {
-    if (pa13_input_timer)
-        pa13_input_timer--;
+    if (hard_button_start_timer)
+	hard_button_start_timer--;
 }
 
 
@@ -57,18 +57,12 @@ unsigned char Pa13_Input (void)
 }
 
 
-unsigned char last_pa13_input_state = 0;
 unsigned char Start_Btn (void)
 {
     unsigned int temp;
     unsigned char last_led_status = 0;
     unsigned char pa13_input_state = 0;
-    
-    if (pa13_input_timer)
-        return last_pa13_input_state;
-
-    pa13_input_timer = 10;    // check start button every 10ms
-    
+        
     if (Led_Is_On())
         last_led_status = 1;
 
@@ -93,8 +87,84 @@ unsigned char Start_Btn (void)
     else
         Led_Off ();
 
-    last_pa13_input_state = pa13_input_state;
     return pa13_input_state;
+}
+
+
+unsigned short hard_start_cnt = 0;
+unsigned short hard_change_cnt = 0;
+unsigned char hard_start_last_edge = 0;
+unsigned char hard_button_start = 0;
+unsigned char hard_button_change =0;
+void Start_Btn_Check_Update (void)
+{
+    if (hard_button_start_timer)
+	return;
+
+    hard_button_start_timer = 10;
+    if (Start_Btn())
+    {
+	if (hard_start_cnt < 5)
+	    hard_start_cnt++;
+
+	if (hard_start_cnt > 2)
+	    hard_start_last_edge = 1;
+
+	if (hard_change_cnt < 300)
+	    hard_change_cnt++;
+	else
+	{
+	    hard_start_cnt = 0;
+	    hard_start_last_edge = 0;
+	    hard_change_cnt = 0;
+	    hard_button_change = 1;
+	}	
+    }
+    else
+    {
+	if (hard_start_cnt)
+	    hard_start_cnt--;
+
+	if (!hard_start_cnt)
+	{
+	    if (hard_start_last_edge)
+		hard_button_start = 1;
+	    else
+		hard_button_start = 0;
+
+	    hard_start_last_edge = 0;
+	}
+
+	if (hard_change_cnt < 250)
+	    hard_button_change = 0;
+
+	if (hard_change_cnt > 5)
+	    hard_change_cnt -= 5;
+	else
+	    hard_change_cnt = 0;
+	
+    }
+}
+
+
+unsigned char Start_Btn_Check_Start (void)
+{
+    return hard_button_start;
+}
+
+
+unsigned char Start_Btn_Check_Change (void)
+{
+    return hard_button_change;
+}
+
+
+void Start_Btn_Check_Change_Reset (void)
+{
+    hard_start_cnt = 0;
+    hard_button_start = 0;
+    hard_change_cnt = 0;
+    hard_button_change = 0;
 }
 
 

@@ -214,7 +214,7 @@ void TF_Oled_Screen (void)
     SCREEN_Init();
 
     int j = 0;
-    char lbuf[10] = { 0 };
+    char lbuf[40] = { 0 };
     while (1)
     {
         // estas 3 juntas ok

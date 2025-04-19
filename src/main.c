@@ -32,11 +32,11 @@
 // -- Externals for the timer module -----------------------
 volatile unsigned char timer_1seg = 0;
 volatile unsigned short timer_standby = 0;
+extern char s_probe [];
 
 
 // Globals ---------------------------------------------------------------------
-// Config Probes Names and Features
-const char s_probe [] = { "Probe1" };
+
 
 // const char s_probe [] = { "probe1,Std Double,Link\r\n" };
 
@@ -94,8 +94,10 @@ int main(void)
     Led_Off();
     
     SCREEN_Clear ();        
-    SCREEN_Text2_Line1 ("Infinity  ");    
-    SCREEN_Text2_Line2 ("  Clinics ");
+    // SCREEN_Text2_Line1 ("Infinity  ");    
+    // SCREEN_Text2_Line2 ("  Clinics ");
+    SCREEN_Text2_Line1 (" Current  ");    
+    SCREEN_Text2_Line2 ("   Wave   ");
     Wait_ms(1000);
 
     //--- Main loop ---//
@@ -105,7 +107,7 @@ int main(void)
         // SCREEN_Text2_Line1 ("Probe1 ch1");
         
         // Production Program
-        Manager ((char *) s_probe);
+        Manager ();
     }
 
     return 0;

@@ -90,7 +90,10 @@ void Hard_Timeouts (void);
 void Led_On (void);
 void Led_Off (void);
 unsigned char Led_Is_On (void);
-    
-unsigned char Start_Btn (void);
+
+void Start_Btn_Check_Update (void);
+unsigned char Start_Btn_Check_Start (void);
+unsigned char Start_Btn_Check_Change (void);
+void Start_Btn_Check_Change_Reset (void);
 
 #endif /* HARD_H_ */
